@@ -1,8 +1,16 @@
 import dotenv from 'dotenv';
 dotenv.config();
 
-import express, { Express, Response, Request } from "express";
+import express, { Express, Response, Request, NextFunction } from "express";
 import { getXataClient } from "./src/xata";
+import {
+    CustomRequest,
+    resolveEventByIndex,
+    EventData,
+} from "./Middlewares/errorhandling/resolveUserByIndex";
+import {validateEvent} from './Middlewares/validators/eventValidators';
+import { CustomError, errorHandler } from './Middlewares/errorhandling/customErrors';
+import { param } from 'express-validator';
 
 const xata = getXataClient();
 const app: Express = express();
@@ -18,6 +26,7 @@ app.get('/', (req: Request, res: Response) => {
     res.send("Express server is running");
 });
 
+// Route to fetch all events
 app.get("/api/v2/events", async (req: Request, res: Response) => {
     try {
         const events = await xata.db.users.getAll();
@@ -26,12 +35,35 @@ app.get("/api/v2/events", async (req: Request, res: Response) => {
             data: events,
         });
     } catch (error) {
+        console.error(error);
         res.status(500).json({ message: "Internal Server Error" });
     }
 });
 
-//post method
-app.post("/api/v2/events", async (req: Request, res: Response) => {
+app.get(
+  "/api/v2/events/:id",
+  resolveEventByIndex(),
+  async (req: CustomRequest, res: Response) => {
+    if (req.eventFoundIndex !== undefined) {
+      try {
+        const event = await xata.db.users.filter({ ID: req.parsedId }).getFirst();
+        res.status(200).json({
+          message: "success",
+          data: event,
+        });
+      } catch (error) {
+        res.status(500).json({ message: "Internal Server Error" });
+      }
+    } else {
+      res.status(404).json({
+        message: "Event not found",
+      });
+    }
+  }
+);
+
+// POST method
+app.post("/api/v2/events", validateEvent,async (req: Request, res: Response) => {
     try {
         const { body } = req;
         const latestEvent = await xata.db.users.sort('ID', 'desc').getFirst();
@@ -43,12 +75,12 @@ app.post("/api/v2/events", async (req: Request, res: Response) => {
             payload: newEvent,
         });
     } catch (error) {
-        console.error(error); 
+        console.error(error);
         res.status(500).json({ message: "Internal Server Error" });
     }
 });
 
-   // PATCH request
+// PATCH request
 app.patch("/api/v2/events/:id", async (req: Request, res: Response) => {
     try {
         const { body } = req;
@@ -102,7 +134,7 @@ app.delete("/api/v2/events/:id", async (req: Request, res: Response) => {
     }
 });
 
-//put method
+// PUT method
 app.put("/api/v2/events/:id", async (req: Request, res: Response) => {
     try {
         const { body } = req;
@@ -131,3 +163,12 @@ app.put("/api/v2/events/:id", async (req: Request, res: Response) => {
     }
 });
 
+// Error handling middleware for 404 Not Found
+app.use((req: Request, res: Response, next: NextFunction) => {
+    const error: CustomError = new Error("Not Found");
+    error.status = 404;
+    next(error);
+});
+
+// General error handling middleware
+app.use(errorHandler);

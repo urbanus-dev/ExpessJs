@@ -21,6 +21,7 @@
   },
   "dependencies": {
     "@xata.io/client": "0.0.0-next.v403cdd55cb26b69c074dbc07b44daa0c2a0a77b6",
-    "express": "^4.21.0"
+    "express": "^4.21.0",
+    "express-validator": "^7.2.0"
   }
 }
