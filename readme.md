@@ -7,7 +7,6 @@
 ![alt text](CartManagement/image-4.png) 
 ![alt text](CartManagement/image-5.png) 
 ![alt text](CartManagement/image-6.png) 
-![alt text](image.png)
 
 ## Overview
 
