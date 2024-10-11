@@ -7,10 +7,13 @@ import {
     CustomRequest,
     resolveEventByIndex,
     EventData,
-} from "./Middlewares/errorhandling/resolveUserByIndex";
-import {validateEvent} from './Middlewares/validators/eventValidators';
-import { CustomError, errorHandler } from './Middlewares/errorhandling/customErrors';
-import { param } from 'express-validator';
+} from "./Separation_of_concerns/middlewares/resolveUserByIndex";
+import {validateEvent} from './Separation_of_concerns/validators/eventValidators';
+import { CustomError, errorHandler } from './Separation_of_concerns/errorhandling/customErrors';
+import { checkSchema, param } from 'express-validator';
+import { eventNames } from 'process';
+import { DateValidationSchema } from './Separation_of_concerns/SchemaValidations/dateValidation';
+import router from './Separation_of_concerns/Expressroutes/eventRoutes';
 
 const xata = getXataClient();
 const app: Express = express();
@@ -61,9 +64,10 @@ app.get(
     }
   }
 );
+app.use("/api/v2/events",router);
 
 // POST method
-app.post("/api/v2/events", validateEvent,async (req: Request, res: Response) => {
+router.post("/", validateEvent,async (req: Request, res: Response) => {
     try {
         const { body } = req;
         const latestEvent = await xata.db.users.sort('ID', 'desc').getFirst();
@@ -81,7 +85,7 @@ app.post("/api/v2/events", validateEvent,async (req: Request, res: Response) => 
 });
 
 // PATCH request
-app.patch("/api/v2/events/:id", async (req: Request, res: Response) => {
+app.patch("/api/v2/events/:id",validateEvent, async (req: Request, res: Response) => {
     try {
         const { body } = req;
         const { id } = req.params;
@@ -135,7 +139,7 @@ app.delete("/api/v2/events/:id", async (req: Request, res: Response) => {
 });
 
 // PUT method
-app.put("/api/v2/events/:id", async (req: Request, res: Response) => {
+app.put("/api/v2/events/:id",validateEvent,checkSchema(DateValidationSchema), async (req: Request, res: Response) => {
     try {
         const { body } = req;
         const { id } = req.params;

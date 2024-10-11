@@ -1,10 +1,12 @@
-import { body, validationResult } from "express-validator";
+import { body, validationResult, checkSchema } from "express-validator";
 import { Request, Response, NextFunction, RequestHandler } from "express";
+import { DateValidationSchema } from "../SchemaValidations/dateValidation";
 
 const validateEvent: RequestHandler[] = [
-    body('Company').notEmpty().withMessage('Company is required').isString().withMessage('Company must be a string').
-    isLength({ min: 3 }).withMessage('Company must be at least 3 characters long'),
-    body('Date').notEmpty().withMessage('Date is required'),
+    (req: Request, res: Response, next: NextFunction): void | Promise<void> => {
+        checkSchema(DateValidationSchema).run(req).then(() => next()).catch(next);
+    },
+    body('Company').notEmpty().withMessage('Company is required'),
     body('Location').notEmpty().withMessage('Location is required'),
     body('Price').notEmpty().withMessage('Price is required'),
     body('Title').notEmpty().withMessage('Title is required'),
